@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tasks</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-2: #f0f2f5;
+    --text: #1a1c23;
+    --text-muted: #6b7280;
+    --accent: #4f46e5;
+    --accent-hover: #4338ca;
+    --danger: #ef4444;
+    --danger-soft: #fee2e2;
+    --border: #e5e7eb;
+    --done: #9ca3af;
+    --shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(17,24,39,.06);
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115;
+      --surface: #191c22;
+      --surface-2: #22252c;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --border: #2a2e37;
+      --done: #6b7280;
+      --shadow: 0 1px 3px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.4);
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter",
+                 "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    justify-content: center;
+    padding: 48px 16px;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 460px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    animation: rise .35s ease both;
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  header {
+    padding: 24px 24px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .brand h1 { font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+  .brand .count { font-size: 14px; color: var(--text-muted); font-weight: 500; }
+
+  .add-row {
+    display: flex;
+    gap: 8px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .add-row input {
+    flex: 1;
+    font-size: 15px;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-2);
+    color: var(--text);
+    transition: border-color .15s, box-shadow .15s, background .15s;
+    outline: none;
+  }
+  .add-row input::placeholder { color: var(--text-muted); }
+  .add-row input:focus {
+    border-color: var(--accent);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+  .add-row button {
+    flex: 0 0 auto;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 0 18px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+    transition: background .15s, transform .06s;
+  }
+  .add-row button:hover { background: var(--accent-hover); }
+  .add-row button:active { transform: scale(.98); }
+
+  .filters {
+    display: flex;
+    gap: 6px;
+    padding: 14px 24px;
+  }
+  .filter {
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .filter.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .filter:not(.active):hover { background: var(--surface-2); }
+
+  ul {
+    list-style: none;
+    padding: 4px 24px 8px;
+    max-height: 46vh;
+    overflow-y: auto;
+  }
+  li.task {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--border);
+    animation: pop .18s ease both;
+  }
+  @keyframes pop { from { opacity:0; transform: scale(.98);} to {opacity:1; transform: scale(1);} }
+  li.task:last-child { border-bottom: none; }
+
+  .check {
+    flex: 0 0 auto;
+    width: 22px; height: 22px;
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .check:hover { border-color: var(--accent); }
+  .check svg { width: 13px; height: 13px; opacity: 0; transform: scale(.5);
+    transition: all .15s; stroke: #fff; }
+  .task.done .check {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .task.done .check svg { opacity: 1; transform: scale(1); }
+
+  .label {
+    flex: 1;
+    font-size: 15px;
+    word-break: break-word;
+    transition: color .15s;
+    cursor: pointer;
+  }
+  .task.done .label {
+    color: var(--done);
+    text-decoration: line-through;
+  }
+
+  .del {
+    flex: 0 0 auto;
+    width: 30px; height: 30px;
+    display: grid;
+    place-items: center;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 8px;
+    cursor: pointer;
+    opacity: 0;
+    transition: all .15s;
+  }
+  li.task:hover .del, .del:focus-visible { opacity: 1; }
+  .del:hover { background: var(--danger-soft); color: var(--danger); }
+  @media (hover: none) { .del { opacity: .6; } }
+  .del svg { width: 17px; height: 17px; }
+
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    font-size: 13px;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+  }
+  .clear-done {
+    background: none; border: none; color: var(--text-muted);
+    font-size: 13px; cursor: pointer; padding: 4px 6px; border-radius: 6px;
+    transition: all .15s; visibility: hidden;
+  }
+  .clear-done.show { visibility: visible; }
+  .clear-done:hover { color: var(--danger); background: var(--danger-soft); }
+
+  .empty {
+    padding: 40px 24px 48px;
+    text-align: center;
+    color: var(--text-muted);
+  }
+  .empty .ico {
+    width: 52px; height: 52px; margin: 0 auto 14px;
+    border-radius: 14px; background: var(--surface-2);
+    display: grid; place-items: center; color: var(--text-muted);
+  }
+  .empty .ico svg { width: 26px; height: 26px; }
+  .empty p { font-size: 15px; }
+  .empty span { font-size: 13px; }
+</style>
+</head>
+<body>
+  <main class="app" role="application" aria-label="Task list">
+    <header>
+      <div class="brand">
+        <h1>Tasks</h1>
+        <span class="count" id="count"></span>
+      </div>
+    </header>
+
+    <form class="add-row" id="addForm">
+      <input id="newTask" type="text" placeholder="Add a task…"
+             autocomplete="off" aria-label="New task" maxlength="120" />
+      <button type="submit" aria-label="Add task">Add</button>
+    </form>
+
+    <div class="filters" role="tablist" aria-label="Filters">
+      <button class="filter active" data-f="all">All</button>
+      <button class="filter" data-f="active">Active</button>
+      <button class="filter" data-f="completed">Done</button>
+    </div>
+
+    <ul id="list"></ul>
+
+    <div class="footer">
+      <span id="remaining"></span>
+      <button class="clear-done" id="clearDone">Clear completed</button>
+    </div>
+  </main>
+
+<script>
+(function () {
+  const KEY = "tasks.v1";
+  let tasks = load();
+  let filter = "all";
+
+  const $ = (id) => document.getElementById(id);
+  const list = $("list");
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(KEY)) || []; }
+    catch { return []; }
+  }
+  function save() {
+    localStorage.setItem(KEY, JSON.stringify(tasks));
+  }
+  function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+
+  // ---- render ----
+  function render() {
+    const visible = tasks.filter(t =>
+      filter === "all" ? true :
+      filter === "active" ? !t.done : t.done
+    );
+
+    list.innerHTML = "";
+    if (visible.length === 0) {
+      list.appendChild(emptyState());
+    } else {
+      visible.forEach(t => list.appendChild(row(t)));
+    }
+
+    const done = tasks.filter(t => t.done).length;
+    const total = tasks.length;
+    $("count").textContent = total ? `${total} task${total>1?"s":""}` : "";
+    const left = total - done;
+    $("remaining").textContent =
+      total ? `${left} of ${total} remaining` : "";
+    $("clearDone").classList.toggle("show", done > 0);
+  }
+
+  function emptyState() {
+    const wrap = document.createElement("div");
+    wrap.className = "empty";
+    const msgs = {
+      all: ["You're all clear 🎉", "Add a task to get started."],
+      active: ["No active tasks", "Nice work — everything's done."],
+      completed: ["Nothing completed yet", "Check off a task to see it here."]
+    };
+    const [h, s] = msgs[filter];
+    wrap.innerHTML =
+      `<div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>` +
+      `<p>${h}</p><span>${s}</span>`;
+    return wrap;
+  }
+
+  function row(t) {
+    const li = document.createElement("li");
+    li.className = "task" + (t.done ? " done" : "");
+    li.dataset.id = t.id;
+
+    const check = document.createElement("button");
+    check.className = "check";
+    check.setAttribute("aria-label", t.done ? "Mark as not done" : "Mark as done");
+    check.innerHTML =
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+    check.addEventListener("click", () => toggle(t.id));
+
+    const label = document.createElement("span");
+    label.className = "label";
+    label.textContent = t.text;
+    label.addEventListener("click", () => toggle(t.id));
+
+    const del = document.createElement("button");
+    del.className = "del";
+    del.setAttribute("aria-label", "Delete task");
+    del.innerHTML =
+      `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`;
+    del.addEventListener("click", () => remove(t.id));
+
+    li.append(check, label, del);
+    return li;
+  }
+
+  // ---- actions ----
+  function add(text) {
+    tasks.push({ id: uid(), text, done: false });
+    save(); render();
+  }
+  function toggle(id) {
+    const t = tasks.find(t => t.id === id);
+    if (t) { t.done = !t.done; save(); render(); }
+  }
+  function remove(id) {
+    tasks = tasks.filter(t => t.id !== id);
+    save(); render();
+  }
+  function clearDone() {
+    tasks = tasks.filter(t => !t.done);
+    save(); render();
+  }
+
+  // ---- wiring ----
+  $("addForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const inp = $("newTask");
+    const text = inp.value.trim();
+    if (!text) return;
+    add(text);
+    inp.value = "";
+    inp.focus();
+    // switch to a filter where the new task is visible
+    if (filter === "completed") setFilter("all");
+  });
+
+  document.querySelectorAll(".filter").forEach(btn => {
+    btn.addEventListener("click", () => setFilter(btn.dataset.f));
+  });
+  function setFilter(f) {
+    filter = f;
+    document.querySelectorAll(".filter").forEach(b =>
+      b.classList.toggle("active", b.dataset.f === f));
+    render();
+  }
+
+  $("clearDone").addEventListener("click", clearDone);
+
+  render();
+})();
+</script>
+</body>
+</html>
